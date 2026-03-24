@@ -1,5 +1,12 @@
 # HelpDesk Frontend
 
+![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883?logo=vue.js&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-7.3-646cff?logo=vite&logoColor=white)
+![Vue Router](https://img.shields.io/badge/Vue_Router-5.0-334155?logo=vuedotjs&logoColor=white)
+![Node](https://img.shields.io/badge/Node-22.12-5fa04e?logo=node.js&logoColor=white)
+![SPA](https://img.shields.io/badge/Architecture-SPA-0f172a)
+![Laravel API](https://img.shields.io/badge/API-Laravel-ff2d20?logo=laravel&logoColor=white)
+
 SPA en Vue 3 para consumir y operar el MVP de HelpDesk (mini ticketing) vía API REST. Este repositorio contiene solo el frontend. El backend vive en otro proyecto y expone los endpoints que esta app consume.
 
 ## Objetivo
