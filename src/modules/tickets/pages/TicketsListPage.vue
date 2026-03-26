@@ -523,6 +523,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getTicketById } from '@/modules/tickets/api/getTicketById'
 import { listTickets } from '@/modules/tickets/api/listTickets'
 import { assignTicket } from '@/modules/tickets/api/assignTicket'
+import { listOperators } from '@/modules/tickets/api/listOperators'
 
 const route = useRoute()
 const router = useRouter()
@@ -531,6 +532,7 @@ const tickets = ref([])
 const pagination = ref({})
 const isLoading = ref(false)
 const errorMessage = ref('')
+const operators = ref([])
 
 const detailTicket = ref(null)
 const isDetailLoading = ref(false)
@@ -552,16 +554,19 @@ const statusOptions = [
   { value: 'closed', label: 'Closed'}
 ]
 
-const assigneeOptions = computed (() => {
-  if (Array.isArray(detailTicket.value?.assignee_options)) {
-    return detailTicket.value.assignee_options
+const assigneeOptions = computed(() => {
+  const optionsMap = new Map()
+
+  operators.value.forEach((operator) => {
+    if (!operator?.id) return
+    optionsMap.set(String(operator.id), operator)
+  })
+
+  if (detailTicket.value?.assignee?.id) {
+    optionsMap.set(String(detailTicket.value.assignee.id), detailTicket.value.assignee)
   }
 
-    if (detailTicket.value?.assignee) {
-    return [detailTicket.value.assignee]
-  }
-
-  return []
+  return Array.from(optionsMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'es'))
 })
 
 let lockedScrollY = 0
@@ -637,6 +642,7 @@ function unlockBodyScroll() {
 
 onMounted(() => {
   window.addEventListener('keydown', handleEscape)
+  fetchOperators()
 })
 
 onBeforeUnmount(() => {
@@ -700,6 +706,18 @@ function extractTicketsResponse(payload) {
     items: [],
     meta: {},
   }
+}
+
+function extractOperatorsResponse(payload) {
+  if (Array.isArray(payload)) {
+    return payload
+  }
+
+  if (Array.isArray(payload?.data)) {
+    return payload.data
+  }
+
+  return []
 }
 
 const activeFilters = computed(() => {
@@ -784,32 +802,41 @@ async function fetchTickets() {
   }
 }
 
+async function fetchOperators() {
+  try {
+    const payload = await listOperators()
+    operators.value = extractOperatorsResponse(payload)
+  } catch (error) {
+    operators.value = []
+  }
+}
+
 function syncTicketForm(ticket) {
   ticketForm.status = ticket?.status || ''
   ticketForm.assignee_id = ticket?.assignee_id
-  ? String(ticket.assignee_id)
-  : ticket?.assignee?.id
-    ? String(ticket.assignee.id)
-    : ''
+    ? String(ticket.assignee_id)
+    : ticket?.assignee?.id
+      ? String(ticket.assignee.id)
+      : ''
 
   previousAssigneeId.value = ticketForm.assignee_id
 }
 
 function getAssigneeNameById(assigneeId) {
-  if(!assigneeId) return 'Sin asignar'
+  if (!assigneeId) return 'Sin asignar'
 
   const match = assigneeOptions.value.find((option) => String(option.id) === String(assigneeId))
   return match?.name || 'Agente seleccionado'
 }
 
-function handleAssigneeChange(value) {
-  if(!detailTicket.value) return
+function handleAssigneeChange() {
+  if (!detailTicket.value) return
 
   const nextAssigneeId = ticketForm.assignee_id
-  const current_page = previousAssigneeId.value
-  
-  if(nextAssigneeId === currentAssigneId) return
-  
+  const currentAssigneeId = previousAssigneeId.value
+
+  if (nextAssigneeId === currentAssigneeId) return
+
   assignConfirm.open = true
   assignConfirm.nextAssigneeId = nextAssigneeId
   assignConfirm.nextAssigneeName = getAssigneeNameById(nextAssigneeId)
