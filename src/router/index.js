@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import LoginPage from '../modules/auth/pages/LoginPage.vue'
 import TicketsPage from '../modules/tickets/pages/TicketsListPage.vue'
 import ConfigPage from '../modules/settings/pages/ConfigPage.vue'
 
@@ -13,6 +14,14 @@ const router = createRouter({
     {
       path: '/',
       redirect: '/tickets',
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginPage,
+      meta: {
+        layout: 'auth',
+      },
     },
     {
       path: '/tickets',

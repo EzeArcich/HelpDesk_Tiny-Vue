@@ -363,6 +363,42 @@
                   </p>
                 </section>
 
+                <section class="ticket-drawer__section">
+                  <div class="ticket-drawer__section-head">
+                    <span class="ticket-drawer__section-kicker">Gestion</span>
+                  </div>
+
+                  <div class="ticket-form-grid">
+                    <label class="ticket-form-field" for="ticket-status">
+                      <span>Estado</span>
+                      <select id="ticket-status" v-model="ticketForm.status" class="tickets-filters__input">
+                        <option value="">Seleccionar estado</option>
+                        <option
+                          v-for="option in statusOptions"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </label>
+
+                    <label class="ticket-form-field" for="ticket-assignee">
+                      <span>Asignado</span>
+                      <select id="ticket-assignee" v-model="ticketForm.assignee_id" class="tickets-filters__input">
+                        <option value="">Sin asignar</option>
+                        <option
+                          v-for="option in assigneeOptions"
+                          :key="option.id"
+                          :value="String(option.id)"
+                        >
+                          {{ option.name }}
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
                 <section class="ticket-drawer__grid">
                   <article class="ticket-drawer__card">
                     <span class="ticket-drawer__card-kicker">Solicitante</span>
@@ -431,6 +467,7 @@
                   </div>
                 </section>
               </template>
+
             </div>
           </aside>
         </div>
@@ -456,6 +493,28 @@ const errorMessage = ref('')
 const detailTicket = ref(null)
 const isDetailLoading = ref(false)
 const detailErrorMessage = ref('')
+const ticketForm = reactive({
+  status: '',
+  assignee_id: '',
+})
+const statusOptions = [
+  { value: 'open', label: 'Open'},
+  { value: 'in_progress', label: 'In progress'},
+  { value: 'closed', label: 'Closed'}
+]
+
+const assigneeOptions = computed (() => {
+  if (Array.isArray(detailTicket.value?.assignee_options)) {
+    return detailTicket.value.assignee_options
+  }
+
+    if (detailTicket.value?.assignee) {
+    return [detailTicket.value.assignee]
+  }
+
+  return []
+})
+
 let lockedScrollY = 0
 
 function normalizeQueryValue(value) {
@@ -676,10 +735,17 @@ async function fetchTickets() {
   }
 }
 
+function syncTicketForm(ticket) {
+  ticketForm.status = ticket?.status || ''
+  ticketForm.assignee_id = ticket?.assignee_id ? String(ticket.assignee_id) : ''
+}
+
+
 async function fetchTicketDetail(id) {
   if (!id) {
     detailTicket.value = null
     detailErrorMessage.value = ''
+    syncTicketForm(null)
     return
   }
 
@@ -688,6 +754,7 @@ async function fetchTicketDetail(id) {
 
   try {
     detailTicket.value = await getTicketById(id)
+    syncTicketForm(detailTicket.value)
   } catch (error) {
     detailTicket.value = null
     detailErrorMessage.value =
@@ -1909,6 +1976,26 @@ watch(
   opacity: 0;
 }
 
+.ticket-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ticket-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ticket-form-field span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.72);
+}
+
 @media (max-width: 980px) {
   .tickets-page__hero,
   .tickets-page__section-head,
@@ -1962,6 +2049,10 @@ watch(
     width: 100%;
     height: 100%;
     border-radius: 24px;
+  }
+
+  .ticket-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 

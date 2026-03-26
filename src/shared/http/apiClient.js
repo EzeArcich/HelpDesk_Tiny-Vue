@@ -27,6 +27,8 @@ export async function apiClient(path, options = {}) {
   const isJsonResponse = response.headers.get('content-type')?.includes('application/json')
   const payload = isJsonResponse ? await response.json() : await response.text()
 
+  console.log(payload);
+
   if (!response.ok) {
     const error = new Error(`HTTP ${response.status}`)
     error.status = response.status

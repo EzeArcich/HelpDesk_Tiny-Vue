@@ -1,5 +1,15 @@
 <template>
-  <div class="app-shell">
+  <div v-if="isAuthLayout" class="auth-layout">
+    <div class="auth-layout__orb auth-layout__orb--one"></div>
+    <div class="auth-layout__orb auth-layout__orb--two"></div>
+    <div class="auth-layout__grid"></div>
+
+    <main class="auth-layout__content">
+      <RouterView />
+    </main>
+  </div>
+
+  <div v-else class="app-shell">
     <aside class="sidebar">
       <div class="sidebar__brand">
         <span class="sidebar__title">HelpDesk</span>
@@ -23,6 +33,7 @@
         </p>
       </div>
 
+      <p class="sidebar__credit">2026 Arcich Silvio</p>
     </aside>
 
     <div class="app-shell__main">
@@ -41,11 +52,65 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRoute } from 'vue-router'
 
-import { RouterLink, RouterView } from 'vue-router'
+const route = useRoute()
+const isAuthLayout = computed(() => route.meta.layout === 'auth')
 </script>
 
 <style>
+.auth-layout {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.14), transparent 34%),
+    linear-gradient(135deg, #07111f 0%, #0f172a 48%, #132238 100%);
+}
+
+.auth-layout__orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(18px);
+  opacity: 0.8;
+  animation: auth-orb-float 12s ease-in-out infinite;
+}
+
+.auth-layout__orb--one {
+  top: 10%;
+  left: -6%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.35), transparent 62%);
+}
+
+.auth-layout__orb--two {
+  right: -8%;
+  bottom: 8%;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.22), transparent 62%);
+  animation-duration: 15s;
+}
+
+.auth-layout__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent);
+}
+
+.auth-layout__content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -55,6 +120,10 @@ import { RouterLink, RouterView } from 'vue-router'
 }
 
 .sidebar {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+  height: calc(100vh - 40px);
   background: linear-gradient(180deg, var(--color-sidebar) 0%, var(--color-sidebar-soft) 100%);
   color: white;
   padding: 28px 22px;
@@ -63,7 +132,6 @@ import { RouterLink, RouterView } from 'vue-router'
   gap: 36px;
   border-radius: 24px;
   box-shadow: var(--shadow-panel);
-  position: relative;
   overflow: hidden;
 }
 
@@ -160,6 +228,14 @@ import { RouterLink, RouterView } from 'vue-router'
   line-height: 1.6;
 }
 
+.sidebar__credit {
+  margin: 18px 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(203, 213, 225, 0.72);
+}
+
 .app-shell__main {
   display: flex;
   flex-direction: column;
@@ -210,6 +286,10 @@ import { RouterLink, RouterView } from 'vue-router'
   }
 
   .sidebar {
+    position: static;
+    top: auto;
+    align-self: stretch;
+    height: auto;
     padding: 16px;
   }
 
@@ -219,6 +299,17 @@ import { RouterLink, RouterView } from 'vue-router'
 
   .content {
     padding: 18px 16px 24px;
+  }
+}
+
+@keyframes auth-orb-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -24px, 0) scale(1.05);
   }
 }
 </style>
