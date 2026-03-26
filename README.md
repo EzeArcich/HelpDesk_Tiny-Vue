@@ -9,6 +9,13 @@
 
 SPA en Vue 3 para consumir y operar el MVP de HelpDesk (mini ticketing) vía API REST. Este repositorio contiene solo el frontend. El backend vive en otro proyecto y expone los endpoints que esta app consume.
 
+## Demo
+
+![Demo 1](docs/demo1.png)
+![Demo 2](docs/demo2.png)
+![Demo 3](docs/demo3.png)
+![Demo 4](docs/demo4.png)
+
 ## Objetivo
 
 Construir una interfaz simple pero profesional para operar tickets sin recargas de página:
