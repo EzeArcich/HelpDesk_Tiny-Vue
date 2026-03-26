@@ -385,7 +385,7 @@
 
                     <label class="ticket-form-field" for="ticket-assignee">
                       <span>Asignado</span>
-                      <select id="ticket-assignee" v-model="ticketForm.assignee_id" class="tickets-filters__input">
+                      <select id="ticket-assignee" v-model="ticketForm.assignee_id" @change="handleAssigneeChange" :disabled="isAssignSubmitting" class="tickets-filters__input">
                         <option value="">Sin asignar</option>
                         <option
                           v-for="option in assigneeOptions"
@@ -466,6 +466,53 @@
           </aside>
         </div>
       </Transition>
+
+      <Transition name="ticket-confirm">
+        <div v-if="assignConfirm.open" class="ticket-confirm">
+          <button
+            type="button"
+            class="ticket-confirm__backdrop"
+            aria-label="Cancelar confirmacion"
+            @click="cancelAssignChange"
+          ></button>
+
+          <div class="ticket-confirm__panel">
+            <p class="ticket-confirm__eyebrow">Confirmacion</p>
+            <h3 class="ticket-confirm__title">Actualizar asignacion</h3>
+
+            <p class="ticket-confirm__text">
+              <template v-if="assignConfirm.nextAssigneeId">
+                Vas a asignar este ticket a <strong>{{ assignConfirm.nextAssigneeName }}</strong>.
+              </template>
+              <template v-else>
+                Vas a quitar la asignacion actual de este ticket.
+              </template>
+              Confirmas el cambio?
+            </p>
+
+            <div class="ticket-confirm__actions">
+              <button
+                type="button"
+                class="ticket-confirm__button ticket-confirm__button--ghost"
+                :disabled="isAssignSubmitting"
+                @click="cancelAssignChange"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="ticket-confirm__button ticket-confirm__button--primary"
+                :disabled="isAssignSubmitting"
+                @click="confirmAssignChange"
+              >
+                {{ isAssignSubmitting ? 'Guardando...' : 'Confirmar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+
     </Teleport>
   </section>
 </template>
@@ -475,6 +522,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getTicketById } from '@/modules/tickets/api/getTicketById'
 import { listTickets } from '@/modules/tickets/api/listTickets'
+import { assignTicket } from '@/modules/tickets/api/assignTicket'
 
 const route = useRoute()
 const router = useRouter()
@@ -490,6 +538,13 @@ const detailErrorMessage = ref('')
 const ticketForm = reactive({
   status: '',
   assignee_id: '',
+})
+const isAssignSubmitting = ref(false)
+const previousAssigneeId = ref('')
+const assignConfirm = reactive({
+  open: false,
+  nextAssigneeId: '',
+  nextAssigneeName: '',
 })
 const statusOptions = [
   { value: 'open', label: 'Open'},
@@ -736,6 +791,57 @@ function syncTicketForm(ticket) {
   : ticket?.assignee?.id
     ? String(ticket.assignee.id)
     : ''
+
+  previousAssigneeId.value = ticketForm.assignee_id
+}
+
+function getAssigneeNameById(assigneeId) {
+  if(!assigneeId) return 'Sin asignar'
+
+  const match = assigneeOptions.value.find((option) => String(option.id) === String(assigneeId))
+  return match?.name || 'Agente seleccionado'
+}
+
+function handleAssigneeChange(value) {
+  if(!detailTicket.value) return
+
+  const nextAssigneeId = ticketForm.assignee_id
+  const current_page = previousAssigneeId.value
+  
+  if(nextAssigneeId === currentAssigneId) return
+  
+  assignConfirm.open = true
+  assignConfirm.nextAssigneeId = nextAssigneeId
+  assignConfirm.nextAssigneeName = getAssigneeNameById(nextAssigneeId)
+}
+
+function cancelAssignChange() {
+  ticketForm.assignee_id = previousAssigneeId.value
+  assignConfirm.open = false
+  assignConfirm.nextAssigneeId = ''
+  assignConfirm.nextAssigneeName = ''
+}
+
+async function confirmAssignChange() {
+  if (!detailTicket.value?.id) return
+
+  isAssignSubmitting.value = true
+
+  try {
+    await assignTicket(detailTicket.value.id, assignConfirm.nextAssigneeId || null)
+    assignConfirm.open = false
+    assignConfirm.nextAssigneeId = ''
+    assignConfirm.nextAssigneeName = ''
+    await fetchTicketDetail(detailTicket.value.id)
+  } catch (error) {
+    ticketForm.assignee_id = previousAssigneeId.value
+    assignConfirm.open = false
+    assignConfirm.nextAssigneeId = ''
+    assignConfirm.nextAssigneeName = ''
+    alert(error?.payload?.message || 'No pudimos actualizar la asignacion.')
+  } finally {
+    isAssignSubmitting.value = false
+  }
 }
 
 
@@ -2232,6 +2338,97 @@ watch(
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(38, 114, 212, 0.72);
+}
+
+.ticket-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.ticket-confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(10px);
+}
+
+.ticket-confirm__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  padding: 24px;
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(21, 30, 49, 0.98), rgba(30, 41, 59, 0.96));
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  box-shadow:
+    0 24px 80px rgba(2, 6, 23, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.ticket-confirm__eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.ticket-confirm__title {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.ticket-confirm__text {
+  margin: 0;
+  line-height: 1.7;
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.ticket-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.ticket-confirm__button {
+  border: 0;
+  border-radius: 14px;
+  padding: 0.78rem 1rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ticket-confirm__button--ghost {
+  background: rgba(148, 163, 184, 0.16);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.ticket-confirm__button--primary {
+  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  color: white;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.28);
+}
+
+.ticket-confirm-enter-active,
+.ticket-confirm-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.ticket-confirm-enter-from,
+.ticket-confirm-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 980px) {
