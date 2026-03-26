@@ -399,17 +399,11 @@
                   </div>
                 </section>
 
-                <section class="ticket-drawer__grid">
-                  <article class="ticket-drawer__card">
+                <section class="ticket-drawer__section">
+                  <article class="ticket-drawer__card ticket-drawer__card--full">
                     <span class="ticket-drawer__card-kicker">Solicitante</span>
                     <strong>{{ detailTicket.requester?.name || 'Sin nombre' }}</strong>
                     <span>{{ detailTicket.requester?.email || 'Sin email' }}</span>
-                  </article>
-
-                  <article class="ticket-drawer__card">
-                    <span class="ticket-drawer__card-kicker">Asignado</span>
-                    <strong>{{ detailTicket.assignee?.name || detailTicket.assignee_id || 'Sin asignar' }}</strong>
-                    <span>{{ detailTicket.assignee?.email || 'Sin contacto disponible' }}</span>
                   </article>
                 </section>
 
@@ -737,7 +731,11 @@ async function fetchTickets() {
 
 function syncTicketForm(ticket) {
   ticketForm.status = ticket?.status || ''
-  ticketForm.assignee_id = ticket?.assignee_id ? String(ticket.assignee_id) : ''
+  ticketForm.assignee_id = ticket?.assignee_id
+  ? String(ticket.assignee_id)
+  : ticket?.assignee?.id
+    ? String(ticket.assignee.id)
+    : ''
 }
 
 
@@ -753,7 +751,8 @@ async function fetchTicketDetail(id) {
   detailErrorMessage.value = ''
 
   try {
-    detailTicket.value = await getTicketById(id)
+    const payload = await getTicketById(id)
+    detailTicket.value = payload.data
     syncTicketForm(detailTicket.value)
   } catch (error) {
     detailTicket.value = null
@@ -1993,7 +1992,7 @@ watch(
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(226, 232, 240, 0.72);
+  color: rgba(38, 114, 212, 0.72);
 }
 
 @media (max-width: 980px) {
